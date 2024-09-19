@@ -1,4 +1,4 @@
-# gitglide.nvim
+# GitGlide.nvim
 
 A Neovim plugin that streamlines your Git workflow by automating commit message generation and push operations. It supports both manual input and AI-generated commit messages using OpenAI's GPT or Google's Gemini models.
 
