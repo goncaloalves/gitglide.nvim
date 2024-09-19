@@ -1,0 +1,1 @@
+# gitglide.nvim
