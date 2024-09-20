@@ -6,7 +6,7 @@ local function get_commit_message()
 end
 
 local function execute_command(command)
-	local handle = io.popen(command)
+	local handle = io.popen(command .. " 2>&1", "r")
 	local result = handle:read("*a")
 	handle:close()
 	return result
