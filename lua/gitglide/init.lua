@@ -36,9 +36,10 @@ end
 M.setup = function(opts)
 	vim.notify("Hello from GitGlide! v3")
 
-	vim.api.nvim_create_user_command("CommitAndPush", M.commit_and_push, {})
-
 	opts = opts or {}
+
+	vim.api.nvim_create_user_command("CommitAndPush", M.commit_and_push, {})
+	vim.keymap.set("n", "<leader>cp", M.commit_and_push, { noremap = true, silent = true, desc = "Push changes" })
 end
 
 return M
