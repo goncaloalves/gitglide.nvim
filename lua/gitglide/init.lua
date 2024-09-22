@@ -1,3 +1,5 @@
+-- TODO: Make this async
+
 local M = {}
 local curl = require("plenary.curl")
 local json = vim.json --require("cjson")
