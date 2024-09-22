@@ -25,7 +25,7 @@ Using [packer.nvim](https://github.com/wbthomason/packer.nvim):
 
 ```lua
 use {
-  'yourusername/git-commit-push',
+  'goncaloalves/git-commit-push',
   requires = {'nvim-lua/plenary.nvim'}
 }
 ```
@@ -34,7 +34,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
-  'yourusername/git-commit-push',
+  'goncaloalves/git-commit-push',
   dependencies = {'nvim-lua/plenary.nvim'},
   config = function()
     require('git-commit-push').setup({
