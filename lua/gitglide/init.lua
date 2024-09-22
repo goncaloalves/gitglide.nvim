@@ -13,8 +13,8 @@ local default_config = {
 	command_name = "GitCommitPush",
 	keymaps = {
 		commit_and_push = "<leader>gcp",
-		commit = "<leader>gc",
-		push = "<leader>gp",
+		commit = "<leader>gcc",
+		push = "<leader>gpp",
 	},
 }
 

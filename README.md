@@ -34,7 +34,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
-  'goncaloalves/git-commit-push',
+  'yourusername/git-commit-push',
   dependencies = {'nvim-lua/plenary.nvim'},
   config = function()
     require('git-commit-push').setup({
@@ -76,9 +76,9 @@ require('git-commit-push').setup({
 
 ### Default Keybindings
 
-- `<leader>cp`: Commit and push changes
-- `<leader>cc`: Commit changes
-- `<leader>cp`: Push changes
+- `<leader>gcp`: Commit and push changes
+- `<leader>gcc`: Commit changes
+- `<leader>gpp`: Push changes
 
 ## Contributing
 
