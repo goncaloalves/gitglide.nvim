@@ -58,7 +58,7 @@ end
 
 local function get_gemini_commit_message(diff)
 	local response = curl.post(
-		"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key="
+		"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key="
 			.. config.gemini_api_key,
 		{
 			headers = {
