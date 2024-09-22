@@ -1,8 +1,6 @@
--- TODO: Make this async
-
 local M = {}
 local curl = require("plenary.curl")
-local json = vim.json --require("cjson")
+local json = vim.json
 
 -- Default configuration
 local default_config = {
@@ -21,14 +19,16 @@ local default_config = {
 local config = {}
 
 local function notify(message, level)
-	vim.notify(message, level, {
-		title = "Git Commit Push",
-		timeout = 3000,
-	})
+	vim.schedule(function()
+		vim.notify(message, level, {
+			title = "GitGlide",
+			timeout = 3000,
+		})
+	end)
 end
 
-local function get_openai_commit_message(diff)
-	local response = curl.post("https://api.openai.com/v1/chat/completions", {
+local function get_openai_commit_message(diff, callback)
+	curl.post("https://api.openai.com/v1/chat/completions", {
 		headers = {
 			["Content-Type"] = "application/json",
 			["Authorization"] = "Bearer " .. config.openai_api_key,
@@ -47,19 +47,22 @@ local function get_openai_commit_message(diff)
 			},
 			max_tokens = 60,
 		}),
+		callback = vim.schedule_wrap(function(response)
+			if response.status ~= 200 then
+				notify("Error calling OpenAI API: " .. response.body, vim.log.levels.ERROR)
+				callback(nil)
+				return
+			end
+
+			local decoded_response = json.decode(response.body)
+			local commit_message = decoded_response.choices[1].message.content:gsub("^%s*(.-)%s*$", "%1") -- Trim whitespace
+			callback(commit_message)
+		end),
 	})
-
-	if response.status ~= 200 then
-		notify("Error calling OpenAI API: " .. response.body, vim.log.levels.ERROR)
-		return nil
-	end
-
-	local decoded_response = json.decode(response.body)
-	return decoded_response.choices[1].message.content:gsub("^%s*(.-)%s*$", "%1") -- Trim whitespace
 end
 
-local function get_gemini_commit_message(diff)
-	local response = curl.post(
+local function get_gemini_commit_message(diff, callback)
+	curl.post(
 		"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key="
 			.. config.gemini_api_key,
 		{
@@ -81,92 +84,156 @@ local function get_gemini_commit_message(diff)
 					maxOutputTokens = 60,
 				},
 			}),
+			callback = vim.schedule_wrap(function(response)
+				if response.status ~= 200 then
+					notify("Error calling Gemini API: " .. response.body, vim.log.levels.ERROR)
+					callback(nil)
+					return
+				end
+
+				local decoded_response = json.decode(response.body)
+				local commit_message = decoded_response.candidates[1].content.parts[1].text:gsub("^%s*(.-)%s*$", "%1") -- Trim whitespace
+				callback(commit_message)
+			end),
 		}
 	)
-
-	if response.status ~= 200 then
-		notify("Error calling Gemini API: " .. response.body, vim.log.levels.ERROR)
-		return nil
-	end
-
-	local decoded_response = json.decode(response.body)
-	return decoded_response.candidates[1].content.parts[1].text:gsub("^%s*(.-)%s*$", "%1") -- Trim whitespace
 end
 
-local function get_commit_message()
+local function get_commit_message(callback)
 	if config.use_ai then
-		-- Get git diff
-		local handle = io.popen("git diff --cached")
-		local diff = handle:read("*a")
-		handle:close()
+		vim.loop.spawn("git", {
+			args = { "diff", "--cached" },
+			stdio = { nil, vim.loop.new_pipe(false), vim.loop.new_pipe(false) },
+		}, function(code, signal)
+			local stdout = ""
+			local stderr = ""
 
-		local commit_message
-		if config.ai_provider == "openai" then
-			commit_message = get_openai_commit_message(diff)
-		elseif config.ai_provider == "gemini" then
-			commit_message = get_gemini_commit_message(diff)
-		else
-			notify("Invalid AI provider specified. Using manual input.", vim.log.levels.WARN)
-			return vim.fn.input("Enter commit message: ")
-		end
+			vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
+				if data then
+					stdout = stdout .. data
+				end
+			end)
 
-		if commit_message then
-			notify("AI-generated commit message: " .. commit_message, vim.log.levels.INFO)
-			return commit_message
-		else
-			return vim.fn.input("Enter commit message: ")
-		end
+			vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
+				if data then
+					stderr = stderr .. data
+				end
+			end)
+
+			vim.loop.close(vim.loop.new_pipe(false))
+			vim.loop.close(vim.loop.new_pipe(false))
+
+			if code ~= 0 then
+				notify("Error getting git diff: " .. stderr, vim.log.levels.ERROR)
+				callback(nil)
+				return
+			end
+
+			if config.ai_provider == "openai" then
+				get_openai_commit_message(stdout, function(commit_message)
+					if commit_message then
+						notify("AI-generated commit message: " .. commit_message, vim.log.levels.INFO)
+						callback(commit_message)
+					else
+						vim.schedule(function()
+							callback(vim.fn.input("Enter commit message: "))
+						end)
+					end
+				end)
+			elseif config.ai_provider == "gemini" then
+				get_gemini_commit_message(stdout, function(commit_message)
+					if commit_message then
+						notify("AI-generated commit message: " .. commit_message, vim.log.levels.INFO)
+						callback(commit_message)
+					else
+						vim.schedule(function()
+							callback(vim.fn.input("Enter commit message: "))
+						end)
+					end
+				end)
+			else
+				notify("Invalid AI provider specified. Using manual input.", vim.log.levels.WARN)
+				vim.schedule(function()
+					callback(vim.fn.input("Enter commit message: "))
+				end)
+			end
+		end)
 	else
-		return vim.fn.input("Enter commit message: ")
+		vim.schedule(function()
+			callback(vim.fn.input("Enter commit message: "))
+		end)
 	end
 end
 
-local function execute_command(command)
-	local handle = io.popen(command .. " 2>&1")
-	local result = handle:read("*a")
-	local success = handle:close()
-	return success, result
+local function execute_command(command, callback)
+	vim.loop.spawn("sh", {
+		args = { "-c", command },
+		stdio = { nil, vim.loop.new_pipe(false), vim.loop.new_pipe(false) },
+	}, function(code, signal)
+		local stdout = ""
+		local stderr = ""
+
+		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
+			if data then
+				stdout = stdout .. data
+			end
+		end)
+
+		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
+			if data then
+				stderr = stderr .. data
+			end
+		end)
+
+		vim.loop.close(vim.loop.new_pipe(false))
+		vim.loop.close(vim.loop.new_pipe(false))
+
+		callback(code == 0, stdout, stderr)
+	end)
 end
 
 function M.commit()
-	-- Get the commit message
-	local commit_message = get_commit_message()
+	get_commit_message(function(commit_message)
+		if commit_message == "" then
+			notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
+			return
+		end
 
-	if commit_message == "" then
-		notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
-		return
-	end
+		execute_command("git add .", function(success, stdout, stderr)
+			if not success then
+				notify("Error staging changes: " .. stderr, vim.log.levels.ERROR)
+				return
+			end
 
-	-- Stage all changes
-	local stage_success, stage_result = execute_command("git add .")
-	if not stage_success then
-		notify("Error staging changes: " .. stage_result, vim.log.levels.ERROR)
-		return
-	end
-
-	-- Commit changes
-	local commit_success, commit_result =
-		execute_command(string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')))
-	if not commit_success then
-		notify("Error committing changes: " .. commit_result, vim.log.levels.ERROR)
-		return
-	end
-	notify(commit_result, vim.log.levels.INFO)
+			execute_command(
+				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
+				function(success, stdout, stderr)
+					if not success then
+						notify("Error committing changes: " .. stderr, vim.log.levels.ERROR)
+						return
+					end
+					notify(stdout, vim.log.levels.INFO)
+				end
+			)
+		end)
+	end)
 end
 
 function M.push()
-	-- Push all branches to origin
-	local push_success, push_result = execute_command("git push --all origin")
-	if not push_success then
-		notify("Error pushing changes: " .. push_result, vim.log.levels.ERROR)
-		return
-	end
-	notify(push_result, vim.log.levels.INFO)
+	execute_command("git push --all origin", function(success, stdout, stderr)
+		if not success then
+			notify("Error pushing changes: " .. stderr, vim.log.levels.ERROR)
+			return
+		end
+		notify(stdout, vim.log.levels.INFO)
+	end)
 end
 
 function M.commit_and_push()
 	M.commit()
-	M.push()
+	vim.defer_fn(function()
+		M.push()
+	end, 1000) -- Wait for 1 second before pushing to ensure commit is completed
 end
 
 function M.setup(opts)
