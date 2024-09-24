@@ -16,6 +16,7 @@ local default_config = {
 		commit = "<leader>gcc",
 		push = "<leader>gpp",
 	},
+	debug = false,
 }
 
 local config = {}
@@ -122,7 +123,10 @@ The commit message should:
   ** **Code Changes:**
   ]]
 
-	-- print(str1 .. diff)
+	if debug then
+		print(str1 .. diff)
+	end
+
 	curl.post(
 		"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key="
 			.. config.gemini_api_key,
@@ -181,8 +185,6 @@ local function get_commit_message(callback)
 				return
 			end
 
-			print("Success: ", success)
-			print("Git Diff stdout: ", stdout)
 			if stdout == "" then
 				notify("No staged changes to commit.", vim.log.levels.WARN)
 				callback(nil)
@@ -227,49 +229,6 @@ local function get_commit_message(callback)
 	end
 end
 
--- function M.commit(callback)
--- 	-- First, get the commit message (with git diff --cached)
--- 	get_commit_message(function(commit_message)
--- 		if commit_message == "" or commit_message == nil then
--- 			notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
--- 			if callback then
--- 				callback(false)
--- 			end
--- 			return
--- 		end
--- 		-- After getting the commit message, stage the changes (git add .)
--- 		execute_command("git add .", function(success, stdout, stderr)
--- 			if not success then
--- 				notify("Error staging changes: " .. stderr, vim.log.levels.ERROR)
--- 				if callback then
--- 					callback(false)
--- 				end
--- 				return
--- 			end
---
--- 			-- After staging, commit the changes (git commit -m)
--- 			-- print("Commit Message: ", commit_message)
--- 			execute_command(
--- 				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
--- 				function(success, stdout, stderr)
--- 					if not success then
--- 						notify("Error committing changes: " .. stderr, vim.log.levels.ERROR)
--- 						if callback then
--- 							callback(false)
--- 						end
--- 						return
--- 					end
--- 					notify("Commit successful!", vim.log.levels.INFO)
--- 					-- print("Commit successful!")
--- 					if callback then
--- 						callback(true)
--- 					end -- Notify success and allow chaining
--- 				end
--- 			)
--- 		end)
--- 	end)
--- end
-
 function M.commit(callback)
 	-- First, stage the changes (git add .)
 	execute_command("git add .", function(add_success, add_stdout, add_stderr)
@@ -313,7 +272,9 @@ function M.commit(callback)
 end
 
 function M.push(callback)
-	-- print("Git Push ing..")
+	if debug then
+		print("Running Git Push...")
+	end
 	execute_command("git push --all origin", function(success, stdout, stderr)
 		if not success then
 			notify("Error pushing changes: " .. stderr, vim.log.levels.ERROR)
@@ -323,7 +284,9 @@ function M.push(callback)
 			return
 		end
 		notify("Push successful!", vim.log.levels.INFO)
-		-- print("Push successful!")
+		if debug then
+			print("Push successful!")
+		end
 		if callback then
 			callback(true)
 		end -- Notify success
@@ -334,10 +297,12 @@ function M.commit_and_push()
 	M.commit(function(commit_success)
 		if commit_success then
 			-- Wait for commit to finish before pushing
-			-- print("Git Commit ran with success!")
+			if debug then
+				print("Git Commit ran with success!")
+			end
 			M.push(function(push_success)
-				if push_success then
-					-- print("Git Push ran with success!")
+				if push_success and debug then
+					print("Git Push ran with success!")
 				end
 			end)
 		else
