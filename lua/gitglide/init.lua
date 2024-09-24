@@ -64,8 +64,8 @@ local function get_openai_commit_message(diff, callback)
 end
 
 local function get_gemini_commit_message(diff, callback)
-	print(
-		[[You are a meticulous and insightful code reviewer tasked with generating precise and informative Git commit messages. 
+	local str1 = [[
+  You are a meticulous and insightful code reviewer tasked with generating precise and informative Git commit messages. 
 
 Analyze the following code changes and craft a commit message that accurately reflects the modifications made. 
 
@@ -78,8 +78,9 @@ The commit message should:
 * **Maintain a professional and informative tone.** 
   **Generate a Git commit message based on the above code changes.  Adhere to the conventional Git commit message format:
   ** **Code Changes:**
-  ]] .. diff
-	)
+  ]]
+
+	print(str1 .. diff)
 	curl.post(
 		"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key="
 			.. config.gemini_api_key,
