@@ -88,7 +88,6 @@ The commit message should:
 * **Maintain a professional and informative tone.** 
   **Generate a Git commit message based on the above code changes.  Adhere to the conventional Git commit message format:
   ** **Code Changes:**
-  
   ]] .. diff,
 							},
 						},
@@ -226,7 +225,7 @@ function M.commit()
 						notify("Error committing changes: " .. stderr, vim.log.levels.ERROR)
 						return
 					end
-					notify(stdout, vim.log.levels.INFO)
+					-- notify(stdout, vim.log.levels.INFO)
 				end
 			)
 		end)
@@ -239,7 +238,7 @@ function M.push()
 			notify("Error pushing changes: " .. stderr, vim.log.levels.ERROR)
 			return
 		end
-		notify(stdout, vim.log.levels.INFO)
+		-- notify(stdout, vim.log.levels.INFO)
 	end)
 end
 
