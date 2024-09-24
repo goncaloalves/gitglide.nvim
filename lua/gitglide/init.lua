@@ -46,6 +46,10 @@ local function execute_command(command, callback)
 		stderr:close()
 		handle:close()
 
+		print(command, " Command exit code: ", code)
+		print(command, " Stdout: ", stdout_data)
+		print(command, " Stderr: ", stderr_data)
+
 		-- Once the process finishes, callback with the result
 		callback(code == 0, stdout_data, stderr_data)
 	end)
