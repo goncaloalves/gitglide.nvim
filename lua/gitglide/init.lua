@@ -88,6 +88,7 @@ The commit message should:
 * **Maintain a professional and informative tone.** 
   **Generate a Git commit message based on the above code changes.  Adhere to the conventional Git commit message format:
   ** **Code Changes:**
+  
   ]] .. diff,
 							},
 						},
