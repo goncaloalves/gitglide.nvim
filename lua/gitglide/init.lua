@@ -181,8 +181,8 @@ local function get_commit_message(callback)
 				return
 			end
 
-			-- print("Success: ", success)
-			-- print("Git Diff stdout: ", stdout)
+			print("Success: ", success)
+			print("Git Diff stdout: ", stdout)
 			if stdout == "" then
 				notify("No staged changes to commit.", vim.log.levels.WARN)
 				callback(nil)
@@ -227,46 +227,85 @@ local function get_commit_message(callback)
 	end
 end
 
+-- function M.commit(callback)
+-- 	-- First, get the commit message (with git diff --cached)
+-- 	get_commit_message(function(commit_message)
+-- 		if commit_message == "" or commit_message == nil then
+-- 			notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
+-- 			if callback then
+-- 				callback(false)
+-- 			end
+-- 			return
+-- 		end
+-- 		-- After getting the commit message, stage the changes (git add .)
+-- 		execute_command("git add .", function(success, stdout, stderr)
+-- 			if not success then
+-- 				notify("Error staging changes: " .. stderr, vim.log.levels.ERROR)
+-- 				if callback then
+-- 					callback(false)
+-- 				end
+-- 				return
+-- 			end
+--
+-- 			-- After staging, commit the changes (git commit -m)
+-- 			-- print("Commit Message: ", commit_message)
+-- 			execute_command(
+-- 				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
+-- 				function(success, stdout, stderr)
+-- 					if not success then
+-- 						notify("Error committing changes: " .. stderr, vim.log.levels.ERROR)
+-- 						if callback then
+-- 							callback(false)
+-- 						end
+-- 						return
+-- 					end
+-- 					notify("Commit successful!", vim.log.levels.INFO)
+-- 					-- print("Commit successful!")
+-- 					if callback then
+-- 						callback(true)
+-- 					end -- Notify success and allow chaining
+-- 				end
+-- 			)
+-- 		end)
+-- 	end)
+-- end
+
 function M.commit(callback)
-	-- First, get the commit message (with git diff --cached)
-	get_commit_message(function(commit_message)
-		if commit_message then
-			if commit_message == "" then
+	-- First, stage the changes (git add .)
+	execute_command("git add .", function(add_success, add_stdout, add_stderr)
+		if not add_success then
+			notify("Error staging changes: " .. add_stderr, vim.log.levels.ERROR)
+			if callback then
+				callback(false)
+			end
+			return
+		end
+
+		-- After staging, get the commit message (with git diff --cached)
+		get_commit_message(function(commit_message)
+			if not commit_message or commit_message == "" then
 				notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
 				if callback then
 					callback(false)
 				end
 				return
 			end
-		end
-		-- After getting the commit message, stage the changes (git add .)
-		execute_command("git add .", function(success, stdout, stderr)
-			if not success then
-				notify("Error staging changes: " .. stderr, vim.log.levels.ERROR)
-				if callback then
-					callback(false)
-				end
-				return
-			end
 
-			-- After staging, commit the changes (git commit -m)
-			-- print("Commit Message: ", commit_message)
-			-- print("Git Commit ing...")
+			-- After getting the commit message, commit the changes (git commit -m)
 			execute_command(
 				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
-				function(success, stdout, stderr)
-					if not success then
-						notify("Error committing changes: " .. stderr, vim.log.levels.ERROR)
+				function(commit_success, commit_stdout, commit_stderr)
+					if not commit_success then
+						notify("Error committing changes: " .. commit_stderr, vim.log.levels.ERROR)
 						if callback then
 							callback(false)
 						end
 						return
 					end
 					notify("Commit successful!", vim.log.levels.INFO)
-					-- print("Commit successful!")
 					if callback then
 						callback(true)
-					end -- Notify success and allow chaining
+					end
 				end
 			)
 		end)
