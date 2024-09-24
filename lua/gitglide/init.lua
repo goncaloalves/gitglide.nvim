@@ -181,6 +181,8 @@ local function get_commit_message(callback)
 				return
 			end
 
+			print("Success: ", success)
+
 			if stdout == "" then
 				notify("No staged changes to commit.", vim.log.levels.WARN)
 				callback(nil)
@@ -224,73 +226,6 @@ local function get_commit_message(callback)
 		end)
 	end
 end
-
--- function M.commit()
--- 	get_commit_message(function(commit_message)
--- 		if commit_message == "" then
--- 			notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
--- 			return
--- 		end
---
--- 		execute_command("git add .", function(success, stdout, stderr)
--- 			if not success then
--- 				notify("Error staging changes: " .. stderr, vim.log.levels.ERROR)
--- 				return
--- 			end
---
--- 			execute_command(
--- 				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
--- 				function(success, stdout, stderr)
--- 					if not success then
--- 						notify("Error committing changes: " .. stderr, vim.log.levels.ERROR)
--- 						return
--- 					end
--- 					notify(stdout, vim.log.levels.INFO)
--- 				end
--- 			)
--- 		end)
--- 	end)
--- end
-
--- function M.commit(callback)
--- 	get_commit_message(function(commit_message)
--- 		if commit_message == "" then
--- 			notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
--- 			if callback then
--- 				callback(false)
--- 			end
--- 			return
--- 		end
---
--- 		-- First stage the changes, then commit
--- 		execute_command("git add .", function(success, stdout, stderr)
--- 			if not success then
--- 				notify("Error staging changes: " .. stderr, vim.log.levels.ERROR)
--- 				if callback then
--- 					callback(false)
--- 				end
--- 				return
--- 			end
---
--- 			execute_command(
--- 				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
--- 				function(success, stdout, stderr)
--- 					if not success then
--- 						notify("Error committing changes: " .. stderr, vim.log.levels.ERROR)
--- 						if callback then
--- 							callback(false)
--- 						end
--- 						return
--- 					end
--- 					notify("Commit successful!", vim.log.levels.INFO)
--- 					if callback then
--- 						callback(true)
--- 					end -- Notify success and allow chaining
--- 				end
--- 			)
--- 		end)
--- 	end)
--- end
 
 function M.commit(callback)
 	-- First, get the commit message (with git diff --cached)
@@ -353,10 +288,6 @@ function M.push(callback)
 end
 
 function M.commit_and_push()
-	-- M.commit()
-	-- vim.defer_fn(function()
-	-- 	M.push()
-	-- end, 1000) -- Wait for 1 second before pushing to ensure commit is completed
 	M.commit(function(commit_success)
 		if commit_success then
 			-- Wait for commit to finish before pushing
