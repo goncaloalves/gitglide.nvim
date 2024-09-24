@@ -295,14 +295,15 @@ end
 function M.commit(callback)
 	-- First, get the commit message (with git diff --cached)
 	get_commit_message(function(commit_message)
-		if commit_message == "" then
-			notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
-			if callback then
-				callback(false)
+		if commit_message then
+			if commit_message == "" then
+				notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
+				if callback then
+					callback(false)
+				end
+				return
 			end
-			return
 		end
-
 		-- After getting the commit message, stage the changes (git add .)
 		execute_command("git add .", function(success, stdout, stderr)
 			if not success then
@@ -314,6 +315,7 @@ function M.commit(callback)
 			end
 
 			-- After staging, commit the changes (git commit -m)
+			print("Commit Message: ", commit_message)
 			execute_command(
 				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
 				function(success, stdout, stderr)
