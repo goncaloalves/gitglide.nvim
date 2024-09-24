@@ -171,53 +171,6 @@ The commit message should:
 	)
 end
 
--- local function get_commit_message(callback)
--- 	if config.use_ai then
--- 		execute_command("git diff --cached", function(success, stdout, stderr) -- Use execute_command here
--- 			if not success then
--- 				notify("Error getting git diff: " .. stderr, vim.log.levels.ERROR)
--- 				callback(nil)
--- 				return
--- 			end
---
--- 			print(stdout)
---
--- 			if config.ai_provider == "openai" then
--- 				get_openai_commit_message(stdout, function(commit_message)
--- 					if commit_message then
--- 						notify("OpenAI-generated commit message: " .. commit_message, vim.log.levels.INFO)
--- 						callback(commit_message)
--- 					else
--- 						vim.schedule(function()
--- 							callback(vim.fn.input("Enter commit message: "))
--- 						end)
--- 					end
--- 				end)
--- 			elseif config.ai_provider == "gemini" then
--- 				get_gemini_commit_message(stdout, function(commit_message)
--- 					if commit_message then
--- 						notify("Gemini-generated commit message: " .. commit_message, vim.log.levels.INFO)
--- 						callback(commit_message)
--- 					else
--- 						vim.schedule(function()
--- 							callback(vim.fn.input("Enter commit message: "))
--- 						end)
--- 					end
--- 				end)
--- 			else
--- 				notify("Invalid AI provider specified. Using manual input.", vim.log.levels.WARN)
--- 				vim.schedule(function()
--- 					callback(vim.fn.input("Enter commit message: "))
--- 				end)
--- 			end
--- 		end)
--- 	else
--- 		vim.schedule(function()
--- 			callback(vim.fn.input("Enter commit message: "))
--- 		end)
--- 	end
--- end
-
 local function get_commit_message(callback)
 	if config.use_ai then
 		-- First, execute git diff --cached to get the changes
