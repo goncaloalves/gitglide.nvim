@@ -122,7 +122,7 @@ The commit message should:
   ** **Code Changes:**
   ]]
 
-	print(str1 .. diff)
+	-- print(str1 .. diff)
 	curl.post(
 		"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key="
 			.. config.gemini_api_key,
@@ -181,8 +181,8 @@ local function get_commit_message(callback)
 				return
 			end
 
-			print("Success: ", success)
-			print("Git Diff stdout: ", stdout)
+			-- print("Success: ", success)
+			-- print("Git Diff stdout: ", stdout)
 			if stdout == "" then
 				notify("No staged changes to commit.", vim.log.levels.WARN)
 				callback(nil)
@@ -250,8 +250,8 @@ function M.commit(callback)
 			end
 
 			-- After staging, commit the changes (git commit -m)
-			print("Commit Message: ", commit_message)
-			print("Git Commit ing...")
+			-- print("Commit Message: ", commit_message)
+			-- print("Git Commit ing...")
 			execute_command(
 				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
 				function(success, stdout, stderr)
@@ -263,7 +263,7 @@ function M.commit(callback)
 						return
 					end
 					notify("Commit successful!", vim.log.levels.INFO)
-					print("Commit successful!")
+					-- print("Commit successful!")
 					if callback then
 						callback(true)
 					end -- Notify success and allow chaining
@@ -274,7 +274,7 @@ function M.commit(callback)
 end
 
 function M.push(callback)
-	print("Git Push ing..")
+	-- print("Git Push ing..")
 	execute_command("git push --all origin", function(success, stdout, stderr)
 		if not success then
 			notify("Error pushing changes: " .. stderr, vim.log.levels.ERROR)
@@ -284,7 +284,7 @@ function M.push(callback)
 			return
 		end
 		notify("Push successful!", vim.log.levels.INFO)
-		print("Push successful!")
+		-- print("Push successful!")
 		if callback then
 			callback(true)
 		end -- Notify success
@@ -295,10 +295,10 @@ function M.commit_and_push()
 	M.commit(function(commit_success)
 		if commit_success then
 			-- Wait for commit to finish before pushing
-			print("Git Commit ran with success!")
+			-- print("Git Commit ran with success!")
 			M.push(function(push_success)
 				if push_success then
-					print("Git Push ran with success!")
+					-- print("Git Push ran with success!")
 				end
 			end)
 		else
