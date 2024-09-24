@@ -40,38 +40,36 @@ local function execute_command(command, callback)
 		args = { "-c", command },
 		stdio = { nil, stdout, stderr },
 	}, function(code, signal)
-		stdout:read_stop()
-		stderr:read_stop()
-		stdout:close()
-		stderr:close()
-		handle:close()
+		vim.loop.read_start(stdout, function(err, data)
+			if err then
+				vim.notify("Error reading stdout: " .. err, vim.log.levels.ERROR)
+				return
+			end
+			if data then
+				stdout_data = stdout_data .. data
+			end
+		end)
 
-		print(command, " Command exit code: ", code)
+		vim.loop.read_start(stderr, function(err, data)
+			if err then
+				vim.notify("Error reading stderr: " .. err, vim.log.levels.ERROR)
+				return
+			end
+			if data then
+				stderr_data = stderr_data .. data
+			end
+		end)
+
 		print(command, " Stdout: ", stdout_data)
 		print(command, " Stderr: ", stderr_data)
 
 		-- Once the process finishes, callback with the result
 		callback(code == 0, stdout_data, stderr_data)
-	end)
-
-	vim.loop.read_start(stdout, function(err, data)
-		if err then
-			vim.notify("Error reading stdout: " .. err, vim.log.levels.ERROR)
-			return
-		end
-		if data then
-			stdout_data = stdout_data .. data
-		end
-	end)
-
-	vim.loop.read_start(stderr, function(err, data)
-		if err then
-			vim.notify("Error reading stderr: " .. err, vim.log.levels.ERROR)
-			return
-		end
-		if data then
-			stderr_data = stderr_data .. data
-		end
+		stdout:read_stop()
+		stderr:read_stop()
+		stdout:close()
+		stderr:close()
+		handle:close()
 	end)
 end
 
@@ -175,17 +173,70 @@ The commit message should:
 	)
 end
 
+-- local function get_commit_message(callback)
+-- 	if config.use_ai then
+-- 		execute_command("git diff --cached", function(success, stdout, stderr) -- Use execute_command here
+-- 			if not success then
+-- 				notify("Error getting git diff: " .. stderr, vim.log.levels.ERROR)
+-- 				callback(nil)
+-- 				return
+-- 			end
+--
+-- 			print(stdout)
+--
+-- 			if config.ai_provider == "openai" then
+-- 				get_openai_commit_message(stdout, function(commit_message)
+-- 					if commit_message then
+-- 						notify("OpenAI-generated commit message: " .. commit_message, vim.log.levels.INFO)
+-- 						callback(commit_message)
+-- 					else
+-- 						vim.schedule(function()
+-- 							callback(vim.fn.input("Enter commit message: "))
+-- 						end)
+-- 					end
+-- 				end)
+-- 			elseif config.ai_provider == "gemini" then
+-- 				get_gemini_commit_message(stdout, function(commit_message)
+-- 					if commit_message then
+-- 						notify("Gemini-generated commit message: " .. commit_message, vim.log.levels.INFO)
+-- 						callback(commit_message)
+-- 					else
+-- 						vim.schedule(function()
+-- 							callback(vim.fn.input("Enter commit message: "))
+-- 						end)
+-- 					end
+-- 				end)
+-- 			else
+-- 				notify("Invalid AI provider specified. Using manual input.", vim.log.levels.WARN)
+-- 				vim.schedule(function()
+-- 					callback(vim.fn.input("Enter commit message: "))
+-- 				end)
+-- 			end
+-- 		end)
+-- 	else
+-- 		vim.schedule(function()
+-- 			callback(vim.fn.input("Enter commit message: "))
+-- 		end)
+-- 	end
+-- end
+
 local function get_commit_message(callback)
 	if config.use_ai then
-		execute_command("git diff --cached", function(success, stdout, stderr) -- Use execute_command here
+		-- First, execute git diff --cached to get the changes
+		execute_command("git diff --cached", function(success, stdout, stderr)
 			if not success then
 				notify("Error getting git diff: " .. stderr, vim.log.levels.ERROR)
 				callback(nil)
 				return
 			end
 
-			print(stdout)
+			if stdout == "" then
+				notify("No staged changes to commit.", vim.log.levels.WARN)
+				callback(nil)
+				return
+			end
 
+			-- After getting the diff, generate the commit message using AI or manual input
 			if config.ai_provider == "openai" then
 				get_openai_commit_message(stdout, function(commit_message)
 					if commit_message then
@@ -216,54 +267,161 @@ local function get_commit_message(callback)
 			end
 		end)
 	else
+		-- Manual input case
 		vim.schedule(function()
 			callback(vim.fn.input("Enter commit message: "))
 		end)
 	end
 end
 
-function M.commit()
+-- function M.commit()
+-- 	get_commit_message(function(commit_message)
+-- 		if commit_message == "" then
+-- 			notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
+-- 			return
+-- 		end
+--
+-- 		execute_command("git add .", function(success, stdout, stderr)
+-- 			if not success then
+-- 				notify("Error staging changes: " .. stderr, vim.log.levels.ERROR)
+-- 				return
+-- 			end
+--
+-- 			execute_command(
+-- 				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
+-- 				function(success, stdout, stderr)
+-- 					if not success then
+-- 						notify("Error committing changes: " .. stderr, vim.log.levels.ERROR)
+-- 						return
+-- 					end
+-- 					notify(stdout, vim.log.levels.INFO)
+-- 				end
+-- 			)
+-- 		end)
+-- 	end)
+-- end
+
+-- function M.commit(callback)
+-- 	get_commit_message(function(commit_message)
+-- 		if commit_message == "" then
+-- 			notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
+-- 			if callback then
+-- 				callback(false)
+-- 			end
+-- 			return
+-- 		end
+--
+-- 		-- First stage the changes, then commit
+-- 		execute_command("git add .", function(success, stdout, stderr)
+-- 			if not success then
+-- 				notify("Error staging changes: " .. stderr, vim.log.levels.ERROR)
+-- 				if callback then
+-- 					callback(false)
+-- 				end
+-- 				return
+-- 			end
+--
+-- 			execute_command(
+-- 				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
+-- 				function(success, stdout, stderr)
+-- 					if not success then
+-- 						notify("Error committing changes: " .. stderr, vim.log.levels.ERROR)
+-- 						if callback then
+-- 							callback(false)
+-- 						end
+-- 						return
+-- 					end
+-- 					notify("Commit successful!", vim.log.levels.INFO)
+-- 					if callback then
+-- 						callback(true)
+-- 					end -- Notify success and allow chaining
+-- 				end
+-- 			)
+-- 		end)
+-- 	end)
+-- end
+
+function M.commit(callback)
+	-- First, get the commit message (with git diff --cached)
 	get_commit_message(function(commit_message)
 		if commit_message == "" then
 			notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
+			if callback then
+				callback(false)
+			end
 			return
 		end
 
+		-- After getting the commit message, stage the changes (git add .)
 		execute_command("git add .", function(success, stdout, stderr)
 			if not success then
 				notify("Error staging changes: " .. stderr, vim.log.levels.ERROR)
+				if callback then
+					callback(false)
+				end
 				return
 			end
 
+			-- After staging, commit the changes (git commit -m)
 			execute_command(
 				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
 				function(success, stdout, stderr)
 					if not success then
 						notify("Error committing changes: " .. stderr, vim.log.levels.ERROR)
+						if callback then
+							callback(false)
+						end
 						return
 					end
-					notify(stdout, vim.log.levels.INFO)
+					notify("Commit successful!", vim.log.levels.INFO)
+					if callback then
+						callback(true)
+					end -- Notify success and allow chaining
 				end
 			)
 		end)
 	end)
 end
 
-function M.push()
+-- function M.push()
+-- 	execute_command("git push --all origin", function(success, stdout, stderr)
+-- 		if not success then
+-- 			notify("Error pushing changes: " .. stderr, vim.log.levels.ERROR)
+-- 			return
+-- 		end
+-- 		notify(stdout, vim.log.levels.INFO)
+-- 	end)
+-- end
+
+function M.push(callback)
 	execute_command("git push --all origin", function(success, stdout, stderr)
 		if not success then
 			notify("Error pushing changes: " .. stderr, vim.log.levels.ERROR)
+			if callback then
+				callback(false)
+			end
 			return
 		end
-		notify(stdout, vim.log.levels.INFO)
+		notify("Push successful!", vim.log.levels.INFO)
+		if callback then
+			callback(true)
+		end -- Notify success
 	end)
 end
 
 function M.commit_and_push()
-	M.commit()
-	vim.defer_fn(function()
-		M.push()
-	end, 1000) -- Wait for 1 second before pushing to ensure commit is completed
+	-- M.commit()
+	-- vim.defer_fn(function()
+	-- 	M.push()
+	-- end, 1000) -- Wait for 1 second before pushing to ensure commit is completed
+	M.commit(function(commit_success)
+		if commit_success then
+			-- Wait for commit to finish before pushing
+			M.push()
+		else
+			notify("Commit failed. Push aborted.", vim.log.levels.ERROR)
+		end
+	end)
 end
 
 function M.setup(opts)
