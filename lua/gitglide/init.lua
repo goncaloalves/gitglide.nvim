@@ -40,36 +40,34 @@ local function execute_command(command, callback)
 		args = { "-c", command },
 		stdio = { nil, stdout, stderr },
 	}, function(code, signal)
-		vim.loop.read_start(stdout, function(err, data)
-			if err then
-				vim.notify("Error reading stdout: " .. err, vim.log.levels.ERROR)
-				return
-			end
-			if data then
-				stdout_data = stdout_data .. data
-			end
-		end)
-
-		vim.loop.read_start(stderr, function(err, data)
-			if err then
-				vim.notify("Error reading stderr: " .. err, vim.log.levels.ERROR)
-				return
-			end
-			if data then
-				stderr_data = stderr_data .. data
-			end
-		end)
-
-		print(command, " Stdout: ", stdout_data)
-		print(command, " Stderr: ", stderr_data)
-
-		-- Once the process finishes, callback with the result
-		callback(code == 0, stdout_data, stderr_data)
 		stdout:read_stop()
 		stderr:read_stop()
 		stdout:close()
 		stderr:close()
 		handle:close()
+
+		-- Once the process finishes, callback with the result
+		callback(code == 0, stdout_data, stderr_data)
+	end)
+
+	vim.loop.read_start(stdout, function(err, data)
+		if err then
+			vim.notify("Error reading stdout: " .. err, vim.log.levels.ERROR)
+			return
+		end
+		if data then
+			stdout_data = stdout_data .. data
+		end
+	end)
+
+	vim.loop.read_start(stderr, function(err, data)
+		if err then
+			vim.notify("Error reading stderr: " .. err, vim.log.levels.ERROR)
+			return
+		end
+		if data then
+			stderr_data = stderr_data .. data
+		end
 	end)
 end
 
