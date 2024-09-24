@@ -28,6 +28,119 @@ local function notify(message, level)
 		})
 	end)
 end
+--
+local function execute_command(command, callback)
+	local stdout = vim.loop.new_pipe(false)
+	local stderr = vim.loop.new_pipe(false)
+	local stdout_data = ""
+	local stderr_data = ""
+
+	local handle
+	handle = vim.loop.spawn("sh", {
+		args = { "-c", command },
+		stdio = { nil, stdout, stderr },
+	}, function(code, signal)
+		stdout:read_stop()
+		stderr:read_stop()
+		stdout:close()
+		stderr:close()
+		handle:close()
+
+		-- Once the process finishes, callback with the result
+		callback(code == 0, stdout_data, stderr_data)
+	end)
+
+	vim.loop.read_start(stdout, function(err, data)
+		if err then
+			vim.notify("Error reading stdout: " .. err, vim.log.levels.ERROR)
+			return
+		end
+		if data then
+			stdout_data = stdout_data .. data
+		end
+	end)
+
+	vim.loop.read_start(stderr, function(err, data)
+		if err then
+			vim.notify("Error reading stderr: " .. err, vim.log.levels.ERROR)
+			return
+		end
+		if data then
+			stderr_data = stderr_data .. data
+		end
+	end)
+end
+
+--
+-- local function execute_command(command, callback)
+-- 	vim.loop.spawn("sh", {
+-- 		args = { "-c", command },
+-- 		stdio = { nil, vim.loop.new_pipe(false), vim.loop.new_pipe(false) },
+-- 	}, function(code, signal)
+-- 		local stdout = ""
+-- 		local stderr = ""
+-- 		local stdout_closed = false
+-- 		local stderr_closed = false
+--
+-- 		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
+-- 			if err then
+-- 				print("Error reading stdout:", err)
+-- 				return
+-- 			end
+-- 			if data then
+-- 				stdout = stdout .. data
+-- 			else
+-- 				stdout_closed = true
+-- 				if stderr_closed then
+-- 					callback(code == 0, stdout, stderr)
+-- 				end
+-- 			end
+-- 		end)
+--
+-- 		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
+-- 			if err then
+-- 				print("Error reading stderr:", err)
+-- 				return
+-- 			end
+-- 			if data then
+-- 				stderr = stderr .. data
+-- 			else
+-- 				stderr_closed = true
+-- 				if stdout_closed then
+-- 					callback(code == 0, stdout, stderr)
+-- 				end
+-- 			end
+-- 		end)
+-- 	end)
+-- end
+
+-- local function execute_command(command, callback)
+-- 	vim.loop.spawn("sh", {
+-- 		args = { "-c", command },
+-- 		stdio = { nil, vim.loop.new_pipe(false), vim.loop.new_pipe(false) },
+-- 	}, function(code, signal)
+-- 		local stdout = ""
+-- 		local stderr = ""
+--
+-- 		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
+-- 			if data then
+-- 				stdout = stdout .. data
+-- 			end
+-- 		end)
+--
+-- 		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
+-- 			if data then
+-- 				stderr = stderr .. data
+-- 			end
+-- 		end)
+--
+-- 		vim.loop.close(vim.loop.new_pipe(false))
+-- 		vim.loop.close(vim.loop.new_pipe(false))
+--
+-- 		callback(code == 0, stdout, stderr)
+-- 	end)
+-- end
+--
 
 local function get_openai_commit_message(diff, callback)
 	curl.post("https://api.openai.com/v1/chat/completions", {
@@ -129,35 +242,83 @@ The commit message should:
 	)
 end
 
+-- local function get_commit_message(callback)
+-- 	if config.use_ai then
+-- 		vim.loop.spawn("git", {
+-- 			args = { "diff", "--cached" },
+-- 			stdio = { nil, vim.loop.new_pipe(false), vim.loop.new_pipe(false) },
+-- 		}, function(code, signal)
+-- 			local stdout = ""
+-- 			local stderr = ""
+--
+-- 			vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
+-- 				if data then
+-- 					stdout = stdout .. data
+-- 				end
+-- 			end)
+--
+-- 			vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
+-- 				if data then
+-- 					stderr = stderr .. data
+-- 				end
+-- 			end)
+--
+-- 			vim.loop.close(vim.loop.new_pipe(false))
+-- 			vim.loop.close(vim.loop.new_pipe(false))
+--
+-- 			if code ~= 0 then
+-- 				notify("Error getting git diff: " .. stderr, vim.log.levels.ERROR)
+-- 				callback(nil)
+-- 				return
+-- 			end
+--
+-- 			if config.ai_provider == "openai" then
+-- 				get_openai_commit_message(stdout, function(commit_message)
+-- 					if commit_message then
+-- 						notify("AI-generated commit message: " .. commit_message, vim.log.levels.INFO)
+-- 						callback(commit_message)
+-- 					else
+-- 						vim.schedule(function()
+-- 							callback(vim.fn.input("Enter commit message: "))
+-- 						end)
+-- 					end
+-- 				end)
+-- 			elseif config.ai_provider == "gemini" then
+-- 				get_gemini_commit_message(stdout, function(commit_message)
+-- 					if commit_message then
+-- 						notify("AI-generated commit message: " .. commit_message, vim.log.levels.INFO)
+-- 						callback(commit_message)
+-- 					else
+-- 						vim.schedule(function()
+-- 							callback(vim.fn.input("Enter commit message: "))
+-- 						end)
+-- 					end
+-- 				end)
+-- 			else
+-- 				notify("Invalid AI provider specified. Using manual input.", vim.log.levels.WARN)
+-- 				vim.schedule(function()
+-- 					callback(vim.fn.input("Enter commit message: "))
+-- 				end)
+-- 			end
+-- 		end)
+-- 	else
+-- 		vim.schedule(function()
+-- 			callback(vim.fn.input("Enter commit message: "))
+-- 		end)
+-- 	end
+-- end
+
 local function get_commit_message(callback)
 	if config.use_ai then
-		vim.loop.spawn("git", {
-			args = { "diff", "--cached" },
-			stdio = { nil, vim.loop.new_pipe(false), vim.loop.new_pipe(false) },
-		}, function(code, signal)
-			local stdout = ""
-			local stderr = ""
-
-			vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
-				if data then
-					stdout = stdout .. data
-				end
-			end)
-
-			vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
-				if data then
-					stderr = stderr .. data
-				end
-			end)
-
-			vim.loop.close(vim.loop.new_pipe(false))
-			vim.loop.close(vim.loop.new_pipe(false))
-
-			if code ~= 0 then
+		print("Using AI...")
+		execute_command("git diff --cached", function(success, stdout, stderr) -- Use execute_command here
+			if not success then
 				notify("Error getting git diff: " .. stderr, vim.log.levels.ERROR)
 				callback(nil)
 				return
 			end
+
+			print(stdout)
 
 			if config.ai_provider == "openai" then
 				get_openai_commit_message(stdout, function(commit_message)
@@ -195,35 +356,10 @@ local function get_commit_message(callback)
 	end
 end
 
-local function execute_command(command, callback)
-	vim.loop.spawn("sh", {
-		args = { "-c", command },
-		stdio = { nil, vim.loop.new_pipe(false), vim.loop.new_pipe(false) },
-	}, function(code, signal)
-		local stdout = ""
-		local stderr = ""
-
-		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
-			if data then
-				stdout = stdout .. data
-			end
-		end)
-
-		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
-			if data then
-				stderr = stderr .. data
-			end
-		end)
-
-		vim.loop.close(vim.loop.new_pipe(false))
-		vim.loop.close(vim.loop.new_pipe(false))
-
-		callback(code == 0, stdout, stderr)
-	end)
-end
-
 function M.commit()
+	print("Getting Commit Message...")
 	get_commit_message(function(commit_message)
+		notify(commit_message)
 		if commit_message == "" then
 			notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
 			return
@@ -242,7 +378,7 @@ function M.commit()
 						notify("Error committing changes: " .. stderr, vim.log.levels.ERROR)
 						return
 					end
-					-- notify(stdout, vim.log.levels.INFO)
+					notify(stdout, vim.log.levels.INFO)
 				end
 			)
 		end)
@@ -255,11 +391,12 @@ function M.push()
 			notify("Error pushing changes: " .. stderr, vim.log.levels.ERROR)
 			return
 		end
-		-- notify(stdout, vim.log.levels.INFO)
+		notify(stdout, vim.log.levels.INFO)
 	end)
 end
 
 function M.commit_and_push()
+	notify("GitGlide Starting..")
 	M.commit()
 	vim.defer_fn(function()
 		M.push()
