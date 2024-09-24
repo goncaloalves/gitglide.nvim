@@ -69,6 +69,7 @@ local function get_gemini_commit_message(diff, callback)
 
 Analyze the following code changes and craft a commit message that accurately reflects the modifications made. 
 
+
 The commit message should:
 
 * **Clearly and concisely summarize the specific changes made in the code.** Avoid generic statements like "updated code" or "fixed bug". Instead, specify what was updated and how, or what bug was fixed and the approach taken.
