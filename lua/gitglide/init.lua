@@ -1,5 +1,3 @@
--- First Version
-
 local M = {}
 local curl = require("plenary.curl")
 local json = vim.json
@@ -70,77 +68,6 @@ local function execute_command(command, callback)
 		end
 	end)
 end
-
---
--- local function execute_command(command, callback)
--- 	vim.loop.spawn("sh", {
--- 		args = { "-c", command },
--- 		stdio = { nil, vim.loop.new_pipe(false), vim.loop.new_pipe(false) },
--- 	}, function(code, signal)
--- 		local stdout = ""
--- 		local stderr = ""
--- 		local stdout_closed = false
--- 		local stderr_closed = false
---
--- 		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
--- 			if err then
--- 				print("Error reading stdout:", err)
--- 				return
--- 			end
--- 			if data then
--- 				stdout = stdout .. data
--- 			else
--- 				stdout_closed = true
--- 				if stderr_closed then
--- 					callback(code == 0, stdout, stderr)
--- 				end
--- 			end
--- 		end)
---
--- 		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
--- 			if err then
--- 				print("Error reading stderr:", err)
--- 				return
--- 			end
--- 			if data then
--- 				stderr = stderr .. data
--- 			else
--- 				stderr_closed = true
--- 				if stdout_closed then
--- 					callback(code == 0, stdout, stderr)
--- 				end
--- 			end
--- 		end)
--- 	end)
--- end
-
--- local function execute_command(command, callback)
--- 	vim.loop.spawn("sh", {
--- 		args = { "-c", command },
--- 		stdio = { nil, vim.loop.new_pipe(false), vim.loop.new_pipe(false) },
--- 	}, function(code, signal)
--- 		local stdout = ""
--- 		local stderr = ""
---
--- 		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
--- 			if data then
--- 				stdout = stdout .. data
--- 			end
--- 		end)
---
--- 		vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
--- 			if data then
--- 				stderr = stderr .. data
--- 			end
--- 		end)
---
--- 		vim.loop.close(vim.loop.new_pipe(false))
--- 		vim.loop.close(vim.loop.new_pipe(false))
---
--- 		callback(code == 0, stdout, stderr)
--- 	end)
--- end
---
 
 local function get_openai_commit_message(diff, callback)
 	curl.post("https://api.openai.com/v1/chat/completions", {
@@ -241,72 +168,6 @@ The commit message should:
 		}
 	)
 end
-
--- local function get_commit_message(callback)
--- 	if config.use_ai then
--- 		vim.loop.spawn("git", {
--- 			args = { "diff", "--cached" },
--- 			stdio = { nil, vim.loop.new_pipe(false), vim.loop.new_pipe(false) },
--- 		}, function(code, signal)
--- 			local stdout = ""
--- 			local stderr = ""
---
--- 			vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
--- 				if data then
--- 					stdout = stdout .. data
--- 				end
--- 			end)
---
--- 			vim.loop.read_start(vim.loop.new_pipe(false), function(err, data)
--- 				if data then
--- 					stderr = stderr .. data
--- 				end
--- 			end)
---
--- 			vim.loop.close(vim.loop.new_pipe(false))
--- 			vim.loop.close(vim.loop.new_pipe(false))
---
--- 			if code ~= 0 then
--- 				notify("Error getting git diff: " .. stderr, vim.log.levels.ERROR)
--- 				callback(nil)
--- 				return
--- 			end
---
--- 			if config.ai_provider == "openai" then
--- 				get_openai_commit_message(stdout, function(commit_message)
--- 					if commit_message then
--- 						notify("AI-generated commit message: " .. commit_message, vim.log.levels.INFO)
--- 						callback(commit_message)
--- 					else
--- 						vim.schedule(function()
--- 							callback(vim.fn.input("Enter commit message: "))
--- 						end)
--- 					end
--- 				end)
--- 			elseif config.ai_provider == "gemini" then
--- 				get_gemini_commit_message(stdout, function(commit_message)
--- 					if commit_message then
--- 						notify("AI-generated commit message: " .. commit_message, vim.log.levels.INFO)
--- 						callback(commit_message)
--- 					else
--- 						vim.schedule(function()
--- 							callback(vim.fn.input("Enter commit message: "))
--- 						end)
--- 					end
--- 				end)
--- 			else
--- 				notify("Invalid AI provider specified. Using manual input.", vim.log.levels.WARN)
--- 				vim.schedule(function()
--- 					callback(vim.fn.input("Enter commit message: "))
--- 				end)
--- 			end
--- 		end)
--- 	else
--- 		vim.schedule(function()
--- 			callback(vim.fn.input("Enter commit message: "))
--- 		end)
--- 	end
--- end
 
 local function get_commit_message(callback)
 	if config.use_ai then
