@@ -336,16 +336,6 @@ function M.commit(callback)
 	end)
 end
 
--- function M.push()
--- 	execute_command("git push --all origin", function(success, stdout, stderr)
--- 		if not success then
--- 			notify("Error pushing changes: " .. stderr, vim.log.levels.ERROR)
--- 			return
--- 		end
--- 		notify(stdout, vim.log.levels.INFO)
--- 	end)
--- end
-
 function M.push(callback)
 	execute_command("git push --all origin", function(success, stdout, stderr)
 		if not success then
