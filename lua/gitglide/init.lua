@@ -357,7 +357,6 @@ end
 
 function M.commit()
 	get_commit_message(function(commit_message)
-		notify(commit_message)
 		if commit_message == "" then
 			notify("Commit message cannot be empty. Aborting.", vim.log.levels.WARN)
 			return
