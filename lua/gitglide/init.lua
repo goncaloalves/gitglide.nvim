@@ -185,7 +185,7 @@ local function get_commit_message(callback)
 			if config.ai_provider == "openai" then
 				get_openai_commit_message(stdout, function(commit_message)
 					if commit_message then
-						notify("AI-generated commit message: " .. commit_message, vim.log.levels.INFO)
+						notify("OpenAI-generated commit message: " .. commit_message, vim.log.levels.INFO)
 						callback(commit_message)
 					else
 						vim.schedule(function()
@@ -196,7 +196,7 @@ local function get_commit_message(callback)
 			elseif config.ai_provider == "gemini" then
 				get_gemini_commit_message(stdout, function(commit_message)
 					if commit_message then
-						notify("AI-generated commit message: " .. commit_message, vim.log.levels.INFO)
+						notify("Gemini-generated commit message: " .. commit_message, vim.log.levels.INFO)
 						callback(commit_message)
 					else
 						vim.schedule(function()
