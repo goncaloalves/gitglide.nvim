@@ -123,7 +123,7 @@ The commit message should:
   ** **Code Changes:**
   ]]
 
-	if debug then
+	if config.debug then
 		print(str1 .. diff)
 	end
 
@@ -252,7 +252,7 @@ function M.commit(callback)
 
 			-- After getting the commit message, commit the changes (git commit -m)
 			execute_command(
-				string.format('git commit -m "%s"', commit_message:gsub('"', '\\"')),
+				string.format('git commit -m "%s"', commit_message), --commit_message:gsub('"', '\\"')),
 				function(commit_success, commit_stdout, commit_stderr)
 					if not commit_success then
 						notify("Error committing changes: " .. commit_stderr, vim.log.levels.ERROR)
@@ -272,7 +272,7 @@ function M.commit(callback)
 end
 
 function M.push(callback)
-	if debug then
+	if config.debug then
 		print("Running Git Push...")
 	end
 	execute_command("git push --all origin", function(success, stdout, stderr)
@@ -284,7 +284,7 @@ function M.push(callback)
 			return
 		end
 		notify("Push successful!", vim.log.levels.INFO)
-		if debug then
+		if config.debug then
 			print("Push successful!")
 		end
 		if callback then
@@ -297,11 +297,11 @@ function M.commit_and_push()
 	M.commit(function(commit_success)
 		if commit_success then
 			-- Wait for commit to finish before pushing
-			if debug then
+			if config.debug then
 				print("Git Commit ran with success!")
 			end
 			M.push(function(push_success)
-				if push_success and debug then
+				if push_success and config.debug then
 					print("Git Push ran with success!")
 				end
 			end)
