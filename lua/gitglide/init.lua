@@ -230,6 +230,9 @@ local function get_commit_message(callback)
 end
 
 function M.commit(callback)
+	if config.debug then
+		print("Running Git Commit...")
+	end
 	-- First, stage the changes (git add .)
 	execute_command("git add .", function(add_success, add_stdout, add_stderr)
 		if not add_success then
@@ -252,7 +255,7 @@ function M.commit(callback)
 
 			-- After getting the commit message, commit the changes (git commit -m)
 			execute_command(
-				string.format('git commit -m "%s"', commit_message), --commit_message:gsub('"', '\\"')),
+				string.format("git commit -m %q", commit_message:gsub("\n", "\\n")), --commit_message:gsub('"', '\\"')),
 				function(commit_success, commit_stdout, commit_stderr)
 					if not commit_success then
 						notify("Error committing changes: " .. commit_stderr, vim.log.levels.ERROR)
@@ -262,6 +265,9 @@ function M.commit(callback)
 						return
 					end
 					notify("Commit successful!", vim.log.levels.INFO)
+					if config.debug then
+						print("Git Commit ran with success!")
+					end
 					if callback then
 						callback(true)
 					end
