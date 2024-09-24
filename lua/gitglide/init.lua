@@ -310,7 +310,6 @@ end
 
 local function get_commit_message(callback)
 	if config.use_ai then
-		print("Using AI...")
 		execute_command("git diff --cached", function(success, stdout, stderr) -- Use execute_command here
 			if not success then
 				notify("Error getting git diff: " .. stderr, vim.log.levels.ERROR)
@@ -357,7 +356,6 @@ local function get_commit_message(callback)
 end
 
 function M.commit()
-	print("Getting Commit Message...")
 	get_commit_message(function(commit_message)
 		notify(commit_message)
 		if commit_message == "" then
@@ -396,7 +394,6 @@ function M.push()
 end
 
 function M.commit_and_push()
-	notify("GitGlide Starting..")
 	M.commit()
 	vim.defer_fn(function()
 		M.push()
