@@ -29,7 +29,12 @@ local function notify(message, level)
 		})
 	end)
 end
---
+
+local function escape_shell_arg(arg)
+	-- Escape double quotes, backslashes, and other special characters
+	return '"' .. arg:gsub('"', '\\"'):gsub("'", "\\'"):gsub("\\", "\\\\"):gsub("$", "\\$"):gsub("`", "\\`") .. '"'
+end
+
 local function execute_command(command, callback)
 	local stdout = vim.loop.new_pipe(false)
 	local stderr = vim.loop.new_pipe(false)
@@ -253,9 +258,12 @@ function M.commit(callback)
 				return
 			end
 
+			local escaped_commit_message = escape_shell_arg(commit_message)
+
 			-- After getting the commit message, commit the changes (git commit -m)
 			execute_command(
-				string.format("git commit -m %q", commit_message:gsub("\n", "\\n")), --commit_message:gsub('"', '\\"')),
+				--				string.format("git commit -m %q", commit_message:gsub("\n", "\\n")), --commit_message:gsub('"', '\\"')),
+				"git commit -m " .. escaped_commit_message, --
 				function(commit_success, commit_stdout, commit_stderr)
 					if not commit_success then
 						notify("Error committing changes: " .. commit_stderr, vim.log.levels.ERROR)
