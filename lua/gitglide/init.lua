@@ -35,6 +35,22 @@ local function escape_shell_arg(arg)
 	return '"' .. arg:gsub('"', '\\"'):gsub("'", "\\'"):gsub("\\", "\\\\"):gsub("$", "\\$"):gsub("`", "\\`") .. '"'
 end
 
+local function get_api_key(key_name)
+	-- 1. Check config object
+	if config[key_name] and config[key_name] ~= "" then
+		return config[key_name]
+	end
+
+	-- 2. Check environment variable
+	local env_key = os.getenv(key_name:upper()) -- Convert to uppercase for consistency
+	if env_key then
+		return env_key
+	end
+
+	-- 3. Return nil if not found
+	return nil
+end
+
 local function execute_command(command, callback)
 	local stdout = vim.loop.new_pipe(false)
 	local stderr = vim.loop.new_pipe(false)
@@ -78,10 +94,20 @@ local function execute_command(command, callback)
 end
 
 local function get_openai_commit_message(diff, callback)
+	local openai_api_key = get_api_key("openai_api_key")
+	if not openai_api_key then
+		vim.notify_once(
+			"OpenAI API key not found. Check configuration or environment variables.",
+			vim.log.levels.ERROR,
+			{ title = "GitGlide" }
+		)
+		callback(nil)
+		return
+	end
 	curl.post("https://api.openai.com/v1/chat/completions", {
 		headers = {
 			["Content-Type"] = "application/json",
-			["Authorization"] = "Bearer " .. config.openai_api_key,
+			["Authorization"] = "Bearer " .. openai_api_key, -- config.openai_api_key,
 		},
 		body = json.encode({
 			model = "gpt-3.5-turbo",
@@ -112,6 +138,17 @@ local function get_openai_commit_message(diff, callback)
 end
 
 local function get_gemini_commit_message(diff, callback)
+	local gemini_api_key = get_api_key("gemini_api_key")
+	if not gemini_api_key then
+		vim.notify_once(
+			"Gemini API key not found. Check configuration or environment variables.",
+			vim.log.levels.ERROR,
+			{ title = "GitGlide" }
+		)
+		callback(nil)
+		return
+	end
+
 	local str1 = [[
   You are a meticulous and insightful code reviewer tasked with generating precise and informative Git commit messages. 
 
@@ -134,7 +171,7 @@ The commit message should:
 
 	curl.post(
 		"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key="
-			.. config.gemini_api_key,
+			.. gemini_api_key, --config.gemini_api_key,
 		{
 			headers = {
 				["Content-Type"] = "application/json",
