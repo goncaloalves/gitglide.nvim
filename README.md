@@ -1,3 +1,15 @@
+```
+
+  _______  __  .___________.  _______  __       __   _______   _______
+ /  _____||  | |           | /  _____||  |     |  | |       \ |   ____|
+|  |  __  |  | `---|  |----`|  |  __  |  |     |  | |  .--.  ||  |__
+|  | |_ | |  |     |  |     |  | |_ | |  |     |  | |  |  |  ||   __|
+|  |__| | |  |     |  |     |  |__| | |  `----.|  | |  '--'  ||  |____
+ \______| |__|     |__|      \______| |_______||__| |_______/ |_______|
+
+
+```
+
 # GitGlide.nvim
 
 A Neovim plugin that streamlines your Git workflow by automating commit message generation and push operations. It supports both manual input and AI-generated commit messages using OpenAI's GPT or Google's Gemini models.
