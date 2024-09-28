@@ -181,19 +181,7 @@ The commit message should:
 					{
 						parts = {
 							{
-								text = [[You are a meticulous and insightful code reviewer tasked with generating precise and informative Git commit messages. 
-
-Analyze the following code changes and craft a commit message that accurately reflects the modifications made. 
-
-The commit message should:
-
-* **Clearly and concisely summarize the specific changes made in the code.** Avoid generic statements like "updated code" or "fixed bug". Instead, specify what was updated and how, or what bug was fixed and the approach taken.
-* **Indicate the files or modules affected by the changes.** For example, mention if the changes relate to the UI, backend logic, or specific components.
-* **Explain the motivation behind the changes if it's not immediately obvious.** For example, if a refactor was performed, briefly explain the benefits of the new structure.
-* **Maintain a professional and informative tone.** 
-  **Generate a Git commit message based on the above code changes.  Adhere to the conventional Git commit message format:
-  ** **Code Changes:**
-  ]] .. diff,
+								text = str1 .. diff,
 							},
 						},
 					},
