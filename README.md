@@ -57,9 +57,10 @@ For better security, it's recommended to use environment variables. Set the foll
 
 **Example (bash):**
 
-````bash
+```bash
 export OPENAI_API_KEY="your_actual_openai_key"
 export GEMINI_API_KEY="your_actual_gemini_key"
+```
 
 ## Configuration
 
@@ -73,7 +74,7 @@ require('git-commit-push').setup({
   gemini_api_key = "your_gemini_api_key_here", -- Optional (Environment Variables are more secure)
   command_name = "GitCommitPush"  -- Custom command name
 })
-````
+```
 
 ### Configuration Options
 
