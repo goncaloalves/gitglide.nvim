@@ -44,6 +44,23 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 }
 ```
 
+## API Key Configuration
+
+You have two options for configuring your OpenAI and Gemini API keys:
+
+**1. Environment Variables (Recommended):**
+
+For better security, it's recommended to use environment variables. Set the following environment variables in your shell's configuration file (e.g., `.bashrc`, `.zshrc`, etc.):
+
+- `OPENAI_API_KEY`: Your OpenAI API key.
+- `GEMINI_API_KEY`: Your Gemini API key.
+
+**Example (bash):**
+
+````bash
+export OPENAI_API_KEY="your_actual_openai_key"
+export GEMINI_API_KEY="your_actual_gemini_key"
+
 ## Configuration
 
 Add the following to your Neovim configuration file (usually `init.lua`):
@@ -52,11 +69,11 @@ Add the following to your Neovim configuration file (usually `init.lua`):
 require('git-commit-push').setup({
   use_ai = true,  -- Set to false for manual commit messages
   ai_provider = "openai",  -- Can be "openai" or "gemini"
-  openai_api_key = "your_openai_api_key_here",
-  gemini_api_key = "your_gemini_api_key_here",
+  openai_api_key = "your_openai_api_key_here", -- Optional (Environment Variables are more secure)
+  gemini_api_key = "your_gemini_api_key_here", -- Optional (Environment Variables are more secure)
   command_name = "GitCommitPush"  -- Custom command name
 })
-```
+````
 
 ### Configuration Options
 
