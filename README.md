@@ -112,7 +112,7 @@ require('git-commit-push').setup({
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines.
 
 ## License
 
