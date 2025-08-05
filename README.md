@@ -96,6 +96,14 @@ require('git-commit-push').setup({
 - `gemini_api_key`: Your Google Gemini API key
 - `command_name`: Custom name for the main command (default: "GitCommitPush")
 
+### Default Values
+
+| Option         | Default Value       |
+|----------------|---------------------|
+| `use_ai`       | `true`              |
+| `ai_provider`  | `"openai"`          |
+| `command_name` | `"GitCommitPush"`   |
+
 ## Usage
 
 ### Commands
@@ -117,3 +125,9 @@ Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) fil
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Troubleshooting & FAQ
+
+**Q: I get an API key error, but I've set my environment variable!**
+
+A: Make sure you have restarted Neovim and your terminal session after exporting the environment variable for it to take effect. Also, double-check for any typos in `OPENAI_API_KEY` or `GEMINI_API_KEY`.
